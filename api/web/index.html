@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lao Captions</title>
+<style>
+@font-face { font-family: "Noto Sans Lao"; src: url("/fonts/NotoSansLao-Bold.ttf") format("truetype"); font-weight: 700; }
+
+/* editor is dark like a video app; tokens kept on :root so a light theme can be added later */
+:root {
+  --bg: #0f1115; --panel: #171a20; --panel-2: #1e222a; --panel-3: #262b35; --border: #2b303a;
+  --text: #e8eaee; --muted: #8e97a4; --accent: #18d2c4; --accent-2: #0fb3a7; --accent-text: #04201e;
+  --clip: #2f6df6; --clip-sel: #18d2c4; --sfx: #f5a524; --wave: #3a4354; --playhead: #ff4d6d;
+  --ok: #3ddc84; --warn: #f5c542; --err: #ff6b6b; --run: #7cc4ff;
+  --radius: 10px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* a class's own display:flex must not beat the hidden attribute */
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans Lao", "Leelawadee UI", sans-serif; }
+.lao { font-family: "Noto Sans Lao", "Leelawadee UI", "Lao UI", sans-serif; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--border); background: var(--panel-2); border-radius: 8px; padding: 6px 11px; }
+button:hover:not(:disabled) { background: var(--panel-3); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+button.primary:hover:not(:disabled) { background: var(--accent-2); }
+button.ghost { background: transparent; border-color: transparent; }
+button.ghost:hover:not(:disabled) { background: var(--panel-3); }
+button.icon { padding: 5px 8px; min-width: 32px; }
+button.danger { color: var(--err); }
+a.btn { text-decoration: none; color: inherit; border: 1px solid var(--border); background: var(--panel-2); border-radius: 8px; padding: 6px 11px; display: inline-block; }
+a.btn:hover { background: var(--panel-3); }
+input[type=range] { accent-color: var(--accent); width: 100%; }
+input[type=color] { width: 40px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-2); padding: 1px 2px; }
+textarea, input[type=text], input[type=number], select { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
+textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.muted { color: var(--muted); } .small { font-size: 12px; }
+.pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--panel-3); color: var(--muted); white-space: nowrap; }
+.pill.review { color: var(--warn); } .pill.done { color: var(--ok); }
+.pill.failed, .pill.canceled { color: var(--err); }
+.pill.queued, .pill.transcribing, .pill.burning { color: var(--run); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--err); }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; font-weight: 600; }
+.toast.show { opacity: 1; }
+
+/* ---------------- home ---------------- */
+.home { max-width: 1180px; margin: 0 auto; padding: 22px 16px 60px; }
+.home-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.home-head h1 { margin: 0; font-size: 20px; }
+.home-head .health { margin-left: auto; display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+.new { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 26px; }
+.drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 150px; border: 2px dashed var(--border); border-radius: 12px; cursor: pointer; background: var(--panel-2); text-align: center; padding: 12px; }
+.drop.over { border-color: var(--accent); }
+.drop input { display: none; }
+.drop .plus { font-size: 30px; line-height: 1; color: var(--accent); }
+.new-opts { display: flex; flex-direction: column; gap: 8px; }
+.new-opts label.check { display: flex; gap: 8px; align-items: center; }
+.bar { height: 5px; background: var(--panel-3); border-radius: 3px; overflow: hidden; display: none; }
+.bar > div { height: 100%; width: 0; background: var(--accent); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; }
+.card:hover { border-color: var(--accent); background: var(--panel); }
+.card .thumb { aspect-ratio: 16 / 10; background: #000; position: relative; overflow: hidden; }
+.card .thumb video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .thumb .pill { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,.7); }
+.card .meta { padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; }
+.card .name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------------- editor ---------------- */
+.ed { display: grid; grid-template-rows: 50px minmax(0, 1fr) auto; height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--border); background: var(--panel); min-width: 0; }
+.topbar .title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32vw; }
+.topbar .spacer { flex: 1; }
+.save-state { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.save-state.err { color: var(--warn); }
+.seg-toggle { display: inline-flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+.seg-toggle button { border: 0; background: transparent; padding: 4px 10px; border-radius: 6px; }
+.seg-toggle button.on { background: var(--panel-3); color: var(--accent); font-weight: 700; }
+.menu { position: relative; }
+.menu-list { position: absolute; right: 0; top: 36px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; min-width: 190px; display: none; z-index: 30; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.menu-list.open { display: block; }
+.menu-list a, .menu-list button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; color: inherit; text-decoration: none; }
+.menu-list a:hover, .menu-list button:hover { background: var(--panel-3); }
+
+.main { display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; min-height: 0; }
+.side { background: var(--panel); border-right: 1px solid var(--border); min-height: 0; display: flex; flex-direction: column; }
+.side.right { border-right: 0; border-left: 1px solid var(--border); }
+.tabs { display: flex; border-bottom: 1px solid var(--border); }
+.tabs button { flex: 1; border: 0; border-radius: 0; background: none; padding: 11px 4px; color: var(--muted); font-weight: 600; border-bottom: 2px solid transparent; }
+.tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+.side-body { overflow-y: auto; padding: 12px; min-height: 0; flex: 1; }
+.sec { margin-bottom: 16px; }
+.sec h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; font-weight: 700; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 76px; justify-content: center; text-align: center; }
+.tile:hover { border-color: var(--muted); }
+.tile.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.tile .sample { font-size: 20px; font-weight: 700; paint-order: stroke fill; line-height: 1.5; }
+.tile .lbl { font-size: 11px; color: var(--muted); }
+.tile .demo { font-size: 18px; font-weight: 700; height: 30px; display: flex; align-items: center; }
+.tile .ico { font-size: 20px; }
+.demo.fade { animation: d-fade 1.6s infinite; } .demo.pop { animation: d-pop 1.6s infinite; } .demo.slide { animation: d-slide 1.6s infinite; }
+@keyframes d-fade { 0% { opacity: 0; } 30%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes d-pop { 0% { opacity: 0; transform: scale(.6); } 15% { opacity: 1; } 21% { transform: scale(1.08); } 30%, 80% { transform: scale(1); opacity: 1; } 100% { opacity: 0; } }
+@keyframes d-slide { 0% { opacity: 0; transform: translateY(12px); } 30%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.row { display: grid; grid-template-columns: 92px 1fr 46px; gap: 8px; align-items: center; margin-bottom: 9px; }
+.row output { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+.row2 { display: flex; gap: 8px; flex-wrap: wrap; }
+.hint { background: var(--panel-2); border-radius: 8px; padding: 8px; font-size: 12px; color: var(--muted); display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; }
+.hint b { color: var(--text); font-weight: 600; }
+.warn { color: var(--warn); font-size: 12px; margin: 6px 0; }
+.insp-text { width: 100%; min-height: 84px; resize: vertical; font-size: 18px; line-height: 1.6; }
+.times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.times label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
+.times input { width: 100%; font-variant-numeric: tabular-nums; }
+.empty-insp { color: var(--muted); text-align: center; padding: 30px 10px; }
+
+.center { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #08090c; }
+.stage { flex: 1; position: relative; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 14px; }
+.stage video { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+.vbox { position: relative; width: 100%; height: 100%; }
+.overlay { position: absolute; text-align: center; white-space: pre; line-height: 1.648; font-weight: 700; paint-order: stroke fill;
+  transform-origin: 50% 100%; cursor: ns-resize; user-select: none; touch-action: none; border-radius: 4px; will-change: transform, opacity; }
+.overlay:hover, .overlay.drag { outline: 1px dashed rgba(255,255,255,.55); outline-offset: 4px; }
+.guide { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--accent); display: none; pointer-events: none; }
+.guide span { position: absolute; right: 6px; top: -20px; background: var(--accent); color: var(--accent-text); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+.transport { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 10px 8px; }
+.transport .time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 140px; text-align: center; font-size: 12px; }
+.play { width: 40px; height: 40px; border-radius: 50%; background: var(--text); color: var(--bg); border: 0; font-size: 16px; }
+.play:hover:not(:disabled) { background: #fff; }
+.processing { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8,9,12,.82); z-index: 5; padding: 20px; }
+.proc-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; width: min(460px, 100%); }
+.proc-card h2 { margin: 0 0 4px; font-size: 16px; }
+.steps { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+.step { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.step .b { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; }
+.step.past { color: var(--text); } .step.past .b { background: var(--ok); border-color: var(--ok); color: #000; }
+.step.now { color: var(--text); font-weight: 700; } .step.now .b { border-color: var(--accent); border-top-color: transparent; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.logtail { background: var(--bg); border-radius: 8px; padding: 8px; font: 11px/1.4 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 110px; overflow: auto; white-space: pre-wrap; }
+
+/* timeline */
+.tl { border-top: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; height: 236px; }
+.tl-tools { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.tl-tools .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.tl-tools .zoom { margin-left: auto; display: flex; align-items: center; gap: 6px; width: 190px; }
+.tl-body { display: grid; grid-template-columns: 74px minmax(0, 1fr); flex: 1; min-height: 0; }
+.tl-labels { border-right: 1px solid var(--border); display: flex; flex-direction: column; padding-top: 24px; font-size: 11px; color: var(--muted); }
+.tl-labels div { display: flex; align-items: center; padding-left: 10px; }
+.tl-scroll { overflow-x: auto; overflow-y: hidden; position: relative; }
+.tl-inner { position: relative; height: 100%; min-width: 100%; }
+.ruler { height: 24px; position: relative; border-bottom: 1px solid var(--border); cursor: pointer; }
+.tick { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--border); }
+.tick.minor { top: 16px; height: 8px; }
+.tick span { position: absolute; left: 4px; top: 3px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.track { position: relative; border-bottom: 1px solid var(--border); }
+.track.caps { height: 46px; } .track.sfx { height: 26px; } .track.wave { height: 54px; }
+.clip { position: absolute; top: 5px; bottom: 5px; background: var(--clip); border-radius: 6px; color: #fff; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 9px; line-height: 36px; cursor: grab; touch-action: none; border: 2px solid transparent; }
+.clip.flag { background: #a0453f; }
+.clip.sel { border-color: var(--clip-sel); box-shadow: 0 0 0 1px var(--clip-sel); }
+.clip.active { filter: brightness(1.18); }
+.clip .h { position: absolute; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background: rgba(255,255,255,.18); }
+.clip .h.l { left: 0; } .clip .h.r { right: 0; }
+.clip.sel .h { background: var(--clip-sel); }
+.sfxmark { position: absolute; top: 4px; height: 18px; border-radius: 5px; background: var(--sfx); color: #2a1a00; font-size: 10px; font-weight: 700; padding: 0 6px; line-height: 18px; white-space: nowrap; cursor: pointer; }
+.wave canvas { position: absolute; left: 0; top: 0; height: 100%; }
+.playhead { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px solid var(--playhead); pointer-events: none; z-index: 4; }
+.playhead::before { content: ""; position: absolute; top: 0; left: -7px; border: 6px solid transparent; border-top: 9px solid var(--playhead); }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 40; padding: 16px; }
+.modal { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; width: min(420px, 100%); }
+.modal h2 { margin: 0 0 6px; font-size: 17px; }
+.modal .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+@media (max-width: 1000px) {
+  /* phone/tablet: video, then timeline, then settings, like CapCut mobile */
+  .ed { display: flex; flex-direction: column; height: auto; min-height: 100vh; }
+  .main { display: contents; }
+  .topbar { flex-wrap: wrap; padding: 8px 12px; height: auto; order: 0; }
+  .topbar .title { max-width: 60vw; }
+  .center { order: 1; } .tl { order: 2; } .side.right { order: 3; } #left { order: 4; }
+  .stage { flex: none; height: 52vh; }
+  .side, .side.right { border: 0; border-top: 1px solid var(--border); }
+  .side-body { max-height: none; }
+  .tl-tools .zoom { width: 100%; margin-left: 0; }
+  .new { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// =====================================================================
+// helpers
+// =====================================================================
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const RUNNING = ["queued", "transcribing", "burning"];
+
+let apiKey = "";
+try { apiKey = localStorage.getItem("laoApiKey") || ""; } catch {}
+const withKey = url => apiKey ? url + (url.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(apiKey) : url;
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers, apiKey ? { "X-API-Key": apiKey } : {});
+  const r = await fetch("/api/v1" + path, opts);
+  if (r.status === 401) {
+    const k = prompt("This server needs an API key:");
+    if (k) { apiKey = k; try { localStorage.setItem("laoApiKey", k); } catch {} return api(path, opts); }
+  }
+  if (r.status === 204) return null;
+  const data = (r.headers.get("content-type") || "").includes("json") ? await r.json() : await r.text();
+  if (!r.ok) throw Object.assign(new Error(data.error || r.statusText), { status: r.status });
+  return data;
+}
+function fmtClock(t) {
+  t = Math.max(0, t || 0);
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return String(m).padStart(2, "0") + ":" + s.toFixed(2).padStart(5, "0");
+}
+function ago(iso) {
+  const s = (Date.now() - new Date(iso)) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + " min ago";
+  if (s < 86400) return Math.floor(s / 3600) + " h ago";
+  return new Date(iso).toLocaleDateString();
+}
+const label = j => j.status === "queued" && j.stage === "burn" ? "exporting soon"
+  : j.status === "burning" ? "exporting" : RUNNING.includes(j.status) && j.stage ? j.status + " · " + j.stage : j.status;
+
+// =====================================================================
+// caption look: mirrors write_ass() in lao_caption.py
+// =====================================================================
+const LIBASS_EM = 1 / 1.648; // libass makes ascent+descent equal the ASS size; Noto Sans Lao's is 1.648 em
+const DEFAULT_STYLE = { size: 3.7, position: 13, color: "#ffffff", outline_color: "#000000", animation: "none", anim_ms: 300, sfx_volume: 1, max_lines: 2 };
+const PRESETS = [
+  { name: "Classic", size: 3.7, color: "#ffffff", outline_color: "#000000", animation: "none", anim_ms: 300 },
+  { name: "Bold yellow", size: 5.5, color: "#ffd400", outline_color: "#000000", animation: "pop", anim_ms: 350 },
+  { name: "TikTok pop", size: 6.5, color: "#ffffff", outline_color: "#111111", animation: "pop", anim_ms: 300 },
+  { name: "Soft fade", size: 3.4, color: "#f4f4f4", outline_color: "#333333", animation: "fade", anim_ms: 400 },
+  { name: "Neon", size: 5, color: "#39ff14", outline_color: "#002b00", animation: "fade", anim_ms: 250 },
+  { name: "Pink slide", size: 5, color: "#ff4fa3", outline_color: "#ffffff", animation: "slide", anim_ms: 350 },
+  { name: "Big red", size: 7.5, color: "#ff3b30", outline_color: "#ffffff", animation: "pop", anim_ms: 400 },
+  { name: "Cinema", size: 3.2, color: "#fff7d6", outline_color: "#000000", animation: "fade", anim_ms: 600 },
+];
+const NEW_TEXT = "ຂໍ້ຄວາມໃໝ່"; // placeholder for an added caption; export refuses it (see openExport)
+const ANIMS = [["none", "None"], ["fade", "Fade"], ["pop", "Pop"], ["slide", "Slide up"]];
+const SFX_ICONS = { pop: "💥", click: "🖱️", whoosh: "💨", ding: "🔔", bubble: "🫧", swipe: "✨", boom: "🥁" };
+
+// same line-breaking as wrap_lao() in lao_caption.py, so the preview breaks where the export will
+const LEADING = "ເແໂໃໄ";
+const isLaoConsonant = c => (c >= "ກ" && c <= "ຮ") || (c >= "ໜ" && c <= "ໟ");
+function syllableStart(chars, i) {
+  const c = chars[i], prev = chars[i - 1];
+  if (LEADING.includes(prev) || prev === "ຫ") return false;
+  if (LEADING.includes(c)) return true;
+  if (!isLaoConsonant(c) || i + 1 >= chars.length) return false;
+  if ("ວລຣ".includes(c) && isLaoConsonant(prev)) return false;
+  const nxt = chars[i + 1];
+  return /\p{Mn}/u.test(nxt) || "ະາຳຽ".includes(nxt);
+}
+function wrapLao(text, width) {
+  text = text.trim().normalize("NFC");
+  if ([...text].length <= width) return [text];
+  const parts = splitHalf(text);
+  return parts.length === 1 ? parts : parts.flatMap(p => wrapLao(p, width));
+}
+function splitHalf(text, at) {
+  const chars = [...text], mid = at ?? Math.floor(chars.length / 2);
+  const near = idx => idx.reduce((b, i) => Math.abs(i - mid) < Math.abs(b - mid) ? i : b);
+  const spaces = chars.flatMap((c, i) => c === " " ? [i] : []);
+  if (spaces.length) { const i = near(spaces); if (Math.abs(i - mid) < chars.length * 0.3) return [chars.slice(0, i).join("").trim(), chars.slice(i).join("").trim()]; }
+  const starts = chars.flatMap((c, i) => i >= 2 && i < chars.length - 1 && syllableStart(chars, i) ? [i] : []);
+  if (starts.length) { const i = near(starts); return [chars.slice(0, i).join("").trim(), chars.slice(i).join("").trim()]; }
+  for (let d = 0; d < chars.length; d++) for (const i of [mid + d, mid - d]) {
+    if (i <= 0 || i >= chars.length) continue;
+    if (/\p{Mn}/u.test(chars[i]) || "ະາຳຽໆ".includes(chars[i]) || LEADING.includes(chars[i - 1])) continue;
+    return [chars.slice(0, i).join(""), chars.slice(i).join("")];
+  }
+  return [text];
+}
+
+// animation state at time t, matching the ASS tags anim_tag() writes (\fad, \fscx/\t, \move)
+function animState(seg, t) {
+  const ms = style.anim_ms, a = style.animation;
+  const inn = (t - seg.start) * 1000, out = (seg.end - t) * 1000, c01 = v => clamp(v, 0, 1);
+  if (a === "fade") return { o: c01(inn / ms) * c01(out / ms), s: 1, rise: 0 };
+  if (a === "pop") {
+    const p = ms * 0.7;
+    const s = inn < p ? 0.6 + 0.48 * inn / p : inn < ms ? 1.08 - 0.08 * (inn - p) / (ms - p) : 1;
+    return { o: c01(inn / (ms / 2)) * c01(out / (ms / 2)), s, rise: 0 };
+  }
+  if (a === "slide") return { o: c01(inn / ms) * c01(out / (ms / 2)), s: 1, rise: 1 - c01(inn / ms) };
+  return { o: 1, s: 1, rise: 0 };
+}
+
+// =====================================================================
+// sound effects (Web Audio so volume can go above 100%)
+// =====================================================================
+let sfxNames = [], audioCtx = null;
+const sfxBuf = {};
+async function loadSfxList() {
+  try { sfxNames = (await api("/sfx")).sfx || []; } catch { sfxNames = []; }
+}
+async function playSfx(name, vol = style.sfx_volume) {
+  if (!name) return;
+  try {
+    audioCtx = audioCtx || new AudioContext();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+    if (!sfxBuf[name]) sfxBuf[name] = await fetch("/sfx/" + name + ".wav").then(r => r.arrayBuffer()).then(b => audioCtx.decodeAudioData(b));
+    const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    src.buffer = sfxBuf[name]; g.gain.value = vol;
+    src.connect(g).connect(audioCtx.destination); src.start();
+  } catch {}
+}
+
+// =====================================================================
+// state
+// =====================================================================
+let jobs = [], cur = null, segs = [], style = { ...DEFAULT_STYLE }, sel = -1;
+let undoStack = [], redoStack = [], saveTimer = null, saveState = "saved", saveMsg = "";
+let pps = 60, fitPps = 60, wave = null, mode = "edit", leftTab = "text", pollTimer = null, homeTimer = null;
+try { Object.assign(style, JSON.parse(localStorage.getItem("laoStyle") || "{}")); } catch {}
+
+const vid = () => $("#vid");
+const duration = () => { const v = vid(); return (v && isFinite(v.duration) && v.duration) || (wave && wave.duration) || (segs.length ? segs[segs.length - 1].end + 1 : 10); };
+const activeIndex = t => segs.findIndex(s => t >= s.start && t < s.end);
+const snapshot = () => JSON.stringify({ segs: segs.map(({ start, end, lao, sfx, whisper, buzz, w2v, llm_ok }) => ({ start, end, lao, sfx, whisper, buzz, w2v, llm_ok })), style, sel });
+
+// every edit goes through change(): history, then the edit, then redraw + autosave
+function change(fn, { redraw = true } = {}) {
+  undoStack.push(snapshot()); if (undoStack.length > 150) undoStack.shift();
+  redoStack = [];
+  fn();
+  afterChange(redraw);
+}
+function afterChange(redraw = true) {
+  segs.sort((a, b) => a.start - b.start);
+  if (mode === "result") { mode = "edit"; setVideoSrc(); } // editing means looking at the live preview again
+  if (cur) renderStatus();
+  try { localStorage.setItem("laoStyle", JSON.stringify(style)); } catch {}
+  if (redraw) { renderTimeline(); renderInspector(); renderLeft(); }
+  layoutOverlay(true); updateUndo(); scheduleSave();
+}
+function restore(snap) { const s = JSON.parse(snap); segs = s.segs; style = s.style; sel = s.sel; afterChange(true); }
+function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); }
+function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); }
+function updateUndo() { const u = $("#undoBtn"), r = $("#redoBtn"); if (u) u.disabled = !undoStack.length; if (r) r.disabled = !redoStack.length; }
+
+// ---------- autosave
+function validate() {
+  for (let i = 0; i < segs.length; i++) {
+    if (!segs[i].lao.trim()) return `Caption ${i + 1} is empty`;
+    if (!(segs[i].end > segs[i].start)) return `Caption ${i + 1}: end is before start`;
+  }
+  return segs.length ? "" : "No captions";
+}
+function setSave(state, msg = "") {
+  saveState = state; saveMsg = msg;
+  const el = $("#saveState"); if (!el) return;
+  el.className = "save-state" + (state === "error" ? " err" : "");
+  el.textContent = { saved: "✓ Saved", saving: "Saving…", pending: "Editing…", error: "⚠ " + msg }[state];
+}
+function scheduleSave() {
+  if (!cur || RUNNING.includes(cur.status)) return;
+  setSave("pending"); clearTimeout(saveTimer); saveTimer = setTimeout(save, 900);
+}
+async function save() {
+  clearTimeout(saveTimer);
+  if (!cur || saveState === "saved") return true;
+  const err = validate(); if (err) { setSave("error", err); return false; }
+  setSave("saving");
+  try {
+    const body = { segments: segs.map(({ start, end, lao, sfx }) => ({ start: +start.toFixed(3), end: +end.toFixed(3), lao: lao.trim(), sfx: sfx || "" })), style };
+    await api("/jobs/" + cur.id + "/segments", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setSave("saved"); return true;
+  } catch (e) { setSave("error", e.message); return false; }
+}
+
+// =====================================================================
+// routing: #/ = projects, #/p/<id> = editor
+// =====================================================================
+window.addEventListener("hashchange", route);
+async function route() {
+  if (cur && saveState !== "saved") await save();
+  clearTimeout(pollTimer); clearInterval(homeTimer);
+  const m = location.hash.match(/^#\/p\/([a-f0-9]+)/);
+  if (m) openEditor(m[1]); else renderHome();
+}
+
+// =====================================================================
+// home
+// =====================================================================
+async function renderHome() {
+  cur = null; document.title = "Lao Captions";
+  $("#app").innerHTML = `
+  <div class="home">
+    <div class="home-head"><h1>Lao Captions</h1><div class="health" id="health"><span class="dot"></span> checking…</div></div>
+    <div class="new">
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".mp4,.mov,.mkv,.webm,.avi,.m4v,video/*">
+        <div class="plus">＋</div><b id="dropText">New project: drop a video or click</b>
+        <span class="muted small">MP4, MOV, MKV, WEBM, AVI</span>
+      </label>
+      <div class="new-opts">
+        <label class="small muted" for="context">What is the video about? (helps the AI)</label>
+        <input type="text" id="context" placeholder="e.g. Clothing shop, handmade skirts">
+        <label class="check"><input type="checkbox" id="noLLM"> Skip the AI fix (faster, less accurate)</label>
+        <button class="primary" id="startBtn" disabled>Create captions</button>
+        <div class="bar" id="upBar"><div></div></div>
+        <span class="muted small">Runs on this PC. About 5–10 min per minute of video.</span>
+      </div>
+    </div>
+    <h3 class="muted small" style="text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px">Projects</h3>
+    <div class="grid" id="grid"></div>
+  </div>`;
+  bindUpload(); loadHealth(); await loadHomeJobs();
+  homeTimer = setInterval(loadHomeJobs, 4000);
+}
+async function loadHealth() {
+  try {
+    const h = await (await fetch("/health")).json();
+    const bad = Object.entries(h.checks).filter(([, v]) => v !== "ok");
+    const el = $("#health"); if (!el) return;
+    el.innerHTML = `<span class="dot ${h.ok ? "ok" : "bad"}"></span> ${h.ok ? "Ready" : esc(bad.map(([k]) => k).join(", ") + " missing")}`;
+    el.title = bad.map(([k, v]) => k + ": " + v).join("\n");
+  } catch { const el = $("#health"); if (el) el.innerHTML = `<span class="dot bad"></span> server not reachable`; }
+}
+async function loadHomeJobs() {
+  try { jobs = (await api("/jobs")).jobs || []; } catch { return; }
+  const g = $("#grid"); if (!g) return;
+  if (!jobs.length) { g.innerHTML = `<div class="muted">No projects yet.</div>`; return; }
+  // keep existing cards (and their loaded thumbnails); only update text
+  const ids = jobs.map(j => j.id).join();
+  if (g.dataset.ids !== ids) {
+    g.dataset.ids = ids;
+    g.innerHTML = jobs.map(j => `
+      <button class="card" data-id="${j.id}">
+        <div class="thumb"><video muted playsinline preload="metadata" src="${withKey("/api/v1/jobs/" + j.id + "/source")}#t=0.8"></video><span class="pill"></span></div>
+        <div class="meta"><span class="name">${esc(j.filename)}</span><span class="muted small when"></span></div>
+      </button>`).join("");
+    $$(".card", g).forEach(c => c.onclick = () => location.hash = "#/p/" + c.dataset.id);
+  }
+  jobs.forEach(j => {
+    const c = g.querySelector(`[data-id="${j.id}"]`); if (!c) return;
+    const p = c.querySelector(".pill"); p.className = "pill " + j.status; p.textContent = label(j);
+    c.querySelector(".when").textContent = ago(j.created_at);
+  });
+}
+function bindUpload() {
+  let picked = null;
+  const pick = f => { if (!f) return; picked = f; $("#dropText").textContent = f.name + " · " + (f.size / 1048576).toFixed(1) + " MB"; $("#startBtn").disabled = false; };
+  $("#file").onchange = e => pick(e.target.files[0]);
+  const d = $("#drop");
+  d.ondragover = e => { e.preventDefault(); d.classList.add("over"); };
+  d.ondragleave = () => d.classList.remove("over");
+  d.ondrop = e => { e.preventDefault(); d.classList.remove("over"); pick(e.dataTransfer.files[0]); };
+  $("#startBtn").onclick = () => {
+    const fd = new FormData();
+    fd.append("video", picked); fd.append("context", $("#context").value); fd.append("no_llm", $("#noLLM").checked);
+    const xhr = new XMLHttpRequest(), bar = $("#upBar");
+    xhr.open("POST", "/api/v1/jobs"); if (apiKey) xhr.setRequestHeader("X-API-Key", apiKey);
+    bar.style.display = "block"; $("#startBtn").disabled = true; $("#startBtn").textContent = "Uploading…";
+    xhr.upload.onprogress = e => { if (e.lengthComputable) bar.firstElementChild.style.width = (100 * e.loaded / e.total) + "%"; };
+    xhr.onloadend = () => {
+      let res = {}; try { res = JSON.parse(xhr.responseText); } catch {}
+      if (xhr.status !== 202) { toast("Upload failed: " + (res.error || xhr.status)); $("#startBtn").disabled = false; $("#startBtn").textContent = "Create captions"; bar.style.display = "none"; return; }
+      location.hash = "#/p/" + res.id;
+    };
+    xhr.send(fd);
+  };
+}
+
+// =====================================================================
+// editor
+// =====================================================================
+async function openEditor(id) {
+  let j; try { j = await api("/jobs/" + id); } catch (e) { toast(e.message); location.hash = "#/"; return; }
+  cur = j; segs = []; sel = -1; undoStack = []; redoStack = []; wave = null; setSave("saved");
+  mode = j.status === "done" ? "result" : "edit";
+  document.title = j.filename + " · Lao Captions";
+  if (!sfxNames.length) await loadSfxList();
+  $("#app").innerHTML = `
+  <div class="ed">
+    <div class="topbar">
+      <button class="ghost icon" id="backBtn" title="All projects">←</button>
+      <span class="title" title="${esc(j.filename)}">${esc(j.filename)}</span>
+      <span class="pill" id="statusPill"></span>
+      <span class="save-state" id="saveState">✓ Saved</span>
+      <span class="spacer"></span>
+      <button class="ghost icon" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↶</button>
+      <button class="ghost icon" id="redoBtn" title="Redo (Ctrl+Y)" disabled>↷</button>
+      <div class="seg-toggle" id="modeToggle"><button data-m="edit">Edit</button><button data-m="result">Result</button></div>
+      <a class="btn" id="dlBtn" href="${withKey("/api/v1/jobs/" + j.id + "/video")}">⬇ Download</a>
+      <button class="primary" id="exportBtn">Export</button>
+      <div class="menu"><button class="ghost icon" id="menuBtn" title="More">⋯</button>
+        <div class="menu-list" id="menuList">
+          <a href="${withKey("/api/v1/jobs/" + j.id + "/srt")}">Download subtitles (.srt)</a>
+          <button id="cancelBtn">Stop processing</button>
+          <button id="delBtn" class="danger">Delete project</button>
+        </div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="side" id="left">
+        <div class="tabs" id="leftTabs"><button data-t="text">Text</button><button data-t="anim">Animation</button><button data-t="sound">Sound</button></div>
+        <div class="side-body" id="leftBody"></div>
+      </div>
+      <div class="center">
+        <div class="stage" id="stage">
+          <div class="vbox" id="vbox">
+            <video id="vid" playsinline preload="auto"></video>
+            <div class="overlay lao" id="overlay" title="Drag up or down to move the captions"></div>
+            <div class="guide" id="guide"><span></span></div>
+          </div>
+          <div class="processing" id="proc" hidden></div>
+        </div>
+        <div class="transport">
+          <button class="ghost icon" id="prevBtn" title="Previous caption">⏮</button>
+          <button class="play" id="playBtn" title="Play / pause (Space)">▶</button>
+          <button class="ghost icon" id="nextBtn" title="Next caption">⏭</button>
+          <span class="time" id="clock">00:00.00 / 00:00.00</span>
+        </div>
+      </div>
+      <div class="side right"><div class="side-body" id="insp"></div></div>
+    </div>
+    <div class="tl" id="tl">
+      <div class="tl-tools">
+        <button class="ghost" id="splitBtn" title="Split the caption at the playhead (S)">✂ Split</button>
+        <button class="ghost" id="addBtn" title="Add a caption at the playhead">＋ Text</button>
+        <button class="ghost" id="dupBtn" title="Duplicate the selected caption">⧉ Duplicate</button>
+        <button class="ghost danger" id="rmBtn" title="Delete the selected caption (Delete)">🗑 Delete</button>
+        <span class="sep"></span>
+        <span class="muted small" id="tlInfo"></span>
+        <div class="zoom"><span class="muted">－</span><input type="range" id="zoom" min="0" max="100" value="0" title="Zoom (Ctrl + mouse wheel)"><span class="muted">＋</span></div>
+      </div>
+      <div class="tl-body">
+        <div class="tl-labels"><div style="height:46px">Captions</div><div style="height:26px">Sound</div><div style="height:54px">Audio</div></div>
+        <div class="tl-scroll" id="tlScroll">
+          <div class="tl-inner" id="tlInner">
+            <div class="ruler" id="ruler"></div>
+            <div class="track caps" id="capTrack"></div>
+            <div class="track sfx" id="sfxTrack"></div>
+            <div class="track wave" id="waveTrack"><canvas id="waveCanvas"></canvas></div>
+            <div class="playhead" id="playhead"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  bindEditor();
+  await refreshJob(true);
+}
+
+async function refreshJob(first) {
+  clearTimeout(pollTimer);
+  let j; try { j = await api("/jobs/" + cur.id); } catch { return; }
+  const before = cur.status;
+  cur = j;
+  const hasCaps = ["review", "done", "failed", "canceled"].includes(j.status);
+  if (hasCaps && (first || (before !== j.status && saveState === "saved" && !segs.length))) {
+    try {
+      const r = await api("/jobs/" + j.id + "/segments");
+      segs = r.segments || [];
+      if (r.style) style = { ...DEFAULT_STYLE, ...r.style };
+    } catch { segs = []; }
+    if (!wave) api("/jobs/" + j.id + "/waveform?n=3000").then(w => { wave = w; drawWave(); }).catch(() => {});
+    if (sel >= segs.length) sel = -1;
+  }
+  if (before === "burning" && j.status === "done" && !first) { mode = "result"; toast("Export finished"); }
+  // edits made while it was busy could not be saved then
+  if (RUNNING.includes(before) && !RUNNING.includes(j.status) && saveState !== "saved") scheduleSave();
+  if (before !== j.status || first) setVideoSrc();
+  renderStatus(); renderProcessing();
+  if (first || before !== j.status) { fitZoom(); renderLeft(); renderInspector(); renderTimeline(); }
+  if (RUNNING.includes(j.status)) pollTimer = setTimeout(() => refreshJob(false), 2000);
+}
+
+function setVideoSrc() {
+  const v = vid(); if (!v) return;
+  const want = withKey("/api/v1/jobs/" + cur.id + (mode === "result" && cur.status === "done" ? "/video?inline=1&v=" + Date.parse(cur.updated_at) : "/source"));
+  if (v.dataset.src === want) return;
+  const t = v.currentTime || 0;
+  v.dataset.src = want; v.src = want;
+  v.onloadedmetadata = () => { v.currentTime = Math.min(t, v.duration || t); fitZoom(); renderTimeline(); layoutOverlay(true); };
+}
+
+function renderStatus() {
+  const j = cur, p = $("#statusPill");
+  p.className = "pill " + j.status; p.textContent = label(j);
+  const running = RUNNING.includes(j.status);
+  $("#exportBtn").disabled = running || !segs.length;
+  $("#exportBtn").textContent = j.status === "burning" || (j.status === "queued" && j.stage === "burn") ? "Exporting…" : j.status === "done" ? "Export again" : "Export";
+  $("#dlBtn").style.display = j.status === "done" ? "" : "none";
+  $("#modeToggle").style.display = j.status === "done" ? "" : "none";
+  $$("#modeToggle button").forEach(b => b.classList.toggle("on", b.dataset.m === mode));
+  $("#cancelBtn").style.display = running ? "" : "none";
+}
+
+const STEPS = [["whisper", "Listening (Whisper)"], ["wav2vec2", "Reading Lao letters (wav2vec2)"], ["llm", "Fixing the Lao (SEA-LION)"]];
+function renderProcessing() {
+  const j = cur, el = $("#proc");
+  const transcribing = j.status === "transcribing" || (j.status === "queued" && j.stage !== "burn");
+  const exporting = j.status === "burning" || (j.status === "queued" && j.stage === "burn");
+  const failedEarly = (j.status === "failed" || j.status === "canceled") && !segs.length;
+  if (!transcribing && !exporting && !failedEarly) { el.hidden = true; return; }
+  el.hidden = false;
+  let steps = "";
+  if (transcribing) {
+    const idx = j.status === "queued" ? -1 : STEPS.findIndex(s => s[0] === (j.stage || "whisper"));
+    steps = STEPS.map(([, name], i) => `<div class="step ${i < idx ? "past" : i === idx ? "now" : ""}"><span class="b">${i < idx ? "✓" : ""}</span>${name}</div>`).join("");
+  } else if (exporting) {
+    steps = `<div class="step now"><span class="b"></span>${j.stage === "collect" ? "Saving training clips" : "Drawing captions and mixing sounds"}</div>`;
+  }
+  el.innerHTML = `<div class="proc-card">
+    <h2>${failedEarly ? "This project stopped" : exporting ? "Exporting video…" : j.status === "queued" ? "Waiting in line…" : "Making captions…"}</h2>
+    <div class="muted small">${failedEarly ? esc(j.error || j.status) : exporting ? "This takes about as long as the video." : "About 5–10 minutes per minute of video. You can leave this page."}</div>
+    <div class="steps">${steps}</div>
+    <div class="logtail">${esc((j.log || []).slice(-6).join("\n"))}</div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------- left panel
+function renderLeft() {
+  $$("#leftTabs button").forEach(b => b.classList.toggle("on", b.dataset.t === leftTab));
+  const body = $("#leftBody"); if (!body) return;
+  if (leftTab === "text") {
+    body.innerHTML = `<div class="sec"><h3>Presets</h3><div class="tiles">${PRESETS.map((p, i) => {
+      const on = p.size === style.size && p.color === style.color && p.outline_color === style.outline_color && p.animation === style.animation;
+      return `<button class="tile ${on ? "on" : ""}" data-p="${i}"><span class="sample lao" style="color:${p.color};-webkit-text-stroke:3px ${p.outline_color}">ສະບາຍດີ</span><span class="lbl">${p.name}</span></button>`;
+    }).join("")}</div></div>
+    <div class="sec"><h3>Tip</h3><div class="muted small">Drag the caption on the video up or down to move it. Fine-tune size and colours on the right.</div></div>`;
+    $$(".tile", body).forEach(b => b.onclick = () => change(() => {
+      const { name, ...p } = PRESETS[+b.dataset.p]; Object.assign(style, p);
+    }));
+  } else if (leftTab === "anim") {
+    body.innerHTML = `<div class="sec"><h3>Entrance</h3><div class="tiles">${ANIMS.map(([k, n]) =>
+      `<button class="tile ${style.animation === k ? "on" : ""}" data-a="${k}"><span class="demo lao ${k}">ສະບາຍດີ</span><span class="lbl">${n}</span></button>`).join("")}</div></div>
+      <div class="sec"><h3>Speed</h3><div class="row"><span>Duration</span><input type="range" id="animMs" min="100" max="1500" step="50" value="${style.anim_ms}"><output>${style.anim_ms} ms</output></div>
+      <div class="muted small">Applies to every caption. Press play to see it in real time.</div></div>`;
+    $$(".tile", body).forEach(b => b.onclick = () => change(() => { style.animation = b.dataset.a; }));
+    bindRange($("#animMs"), "anim_ms", v => v + " ms");
+  } else {
+    const cs = sel >= 0 ? segs[sel] : null;
+    body.innerHTML = `<div class="sec"><h3>Sound effects</h3>
+      <div class="muted small" style="margin-bottom:8px">${cs ? "Click to preview. Use the buttons to add it." : "Select a caption on the timeline, or add a sound to all captions."}</div>
+      <div class="tiles">${["", ...sfxNames].map(n => `<button class="tile ${cs && (cs.sfx || "") === n ? "on" : ""}" data-s="${n}">
+        <span class="ico">${n ? SFX_ICONS[n] || "🔊" : "🔇"}</span><span class="lbl">${n || "None"}</span></button>`).join("")}</div></div>
+      <div class="sec"><div class="row2">
+        <button id="sfxSel" ${cs ? "" : "disabled"}>Add to selected</button>
+        <button id="sfxAll" ${segs.length ? "" : "disabled"}>Add to all</button>
+      </div><div class="muted small" style="margin-top:6px">Chosen: <b id="sfxPick">${esc(window._sfxPick ?? (cs?.sfx || "") ?? "") || "None"}</b></div></div>
+      <div class="sec"><h3>Volume</h3><div class="row"><span>Effects</span><input type="range" id="sfxVol" min="0" max="2" step="0.05" value="${style.sfx_volume}"><output>${Math.round(style.sfx_volume * 100)}%</output></div></div>`;
+    $$(".tile", body).forEach(b => b.onclick = () => {
+      window._sfxPick = b.dataset.s; $("#sfxPick").textContent = b.dataset.s || "None";
+      $$(".tile", body).forEach(x => x.classList.toggle("on", x === b)); playSfx(b.dataset.s);
+    });
+    $("#sfxSel").onclick = () => { if (sel < 0) return; const n = window._sfxPick ?? ""; change(() => { segs[sel].sfx = n; }); toast(n ? "Sound added" : "Sound removed"); };
+    $("#sfxAll").onclick = () => { const n = window._sfxPick ?? ""; change(() => segs.forEach(s => s.sfx = n)); toast(n ? `“${n}” on all ${segs.length} captions` : "Sounds removed"); };
+    bindRange($("#sfxVol"), "sfx_volume", v => Math.round(v * 100) + "%", () => playSfx(window._sfxPick || "pop"));
+  }
+}
+
+// a slider bound to a style key: one undo step per drag, live preview while dragging
+function bindRange(el, key, fmtv, onEnd) {
+  if (!el) return;
+  const out = el.parentElement.querySelector("output");
+  let started = false;
+  el.oninput = () => {
+    if (!started) { undoStack.push(snapshot()); redoStack = []; started = true; }
+    style[key] = +el.value; if (out) out.textContent = fmtv(style[key]);
+    layoutOverlay(true);
+  };
+  el.onchange = () => { started = false; afterChange(false); syncStyleControls(); onEnd && onEnd(); };
+}
+function syncStyleControls() { // keep both panels' sliders in step without rebuilding them
+  const map = { stSize: ["size", v => v.toFixed(1) + "%"], stPos: ["position", v => v + "%"], stLines: ["max_lines", v => String(v)], animMs: ["anim_ms", v => v + " ms"], stMs: ["anim_ms", v => v + " ms"], sfxVol: ["sfx_volume", v => Math.round(v * 100) + "%"] };
+  for (const [id, [k, f]] of Object.entries(map)) { const el = document.getElementById(id); if (el && document.activeElement !== el) { el.value = style[k]; const o = el.parentElement.querySelector("output"); if (o) o.textContent = f(style[k]); } }
+}
+
+// ---------------------------------------------------------------- inspector
+function renderInspector() {
+  const el = $("#insp"); if (!el) return;
+  const s = sel >= 0 ? segs[sel] : null;
+  const readOnly = RUNNING.includes(cur.status);
+  const capHTML = s ? `
+    <div class="sec"><h3>Caption ${sel + 1} of ${segs.length}</h3>
+      <textarea class="insp-text lao" id="inText" ${readOnly ? "disabled" : ""}>${esc(s.lao)}</textarea>
+      ${s.llm_ok === false ? `<div class="warn">⚠ The AI could not fix this line. Please check it.</div>` : ""}
+      <div class="times">
+        <label>Start (s)<input type="number" id="inStart" step="0.05" min="0" value="${s.start.toFixed(2)}" ${readOnly ? "disabled" : ""}></label>
+        <label>End (s)<input type="number" id="inEnd" step="0.05" min="0" value="${s.end.toFixed(2)}" ${readOnly ? "disabled" : ""}></label>
+      </div>
+      <div class="row" style="grid-template-columns:92px 1fr auto"><span>Sound</span>
+        <select id="inSfx" ${readOnly ? "disabled" : ""}><option value="">None</option>${sfxNames.map(n => `<option ${s.sfx === n ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <button class="icon" id="inSfxPlay" title="Preview sound">▶</button></div>
+      ${(s.whisper || s.w2v || s.buzz) ? `<div class="hint">${s.buzz ? `<span>BuzzASR</span><b class="lao">${esc(s.buzz)}</b>` : ""}${s.w2v ? `<span>wav2vec2</span><b class="lao">${esc(s.w2v)}</b>` : ""}${s.whisper ? `<span>Whisper</span><b>${esc(s.whisper)}</b>` : ""}</div>` : ""}
+    </div>` : `<div class="empty-insp">Click a caption on the timeline<br>or on the video to edit it.</div>`;
+  el.innerHTML = capHTML + `
+    <div class="sec"><h3>Text style · all captions</h3>
+      <div class="row"><span>Size</span><input type="range" id="stSize" min="1.5" max="10" step="0.1" value="${style.size}"><output>${style.size.toFixed(1)}%</output></div>
+      <div class="row"><span>Position</span><input type="range" id="stPos" min="2" max="45" step="0.5" value="${style.position}"><output>${style.position}%</output></div>
+      <div class="row" title="Longer captions are shown in parts, one after another"><span>Max lines</span><input type="range" id="stLines" min="1" max="6" step="1" value="${style.max_lines || 2}"><output>${style.max_lines || 2}</output></div>
+      <div class="row"><span>Text</span><span><input type="color" id="stColor" value="${style.color}"></span><span></span></div>
+      <div class="row"><span>Outline</span><span><input type="color" id="stOutline" value="${style.outline_color}"></span><span></span></div>
+      <div class="row"><span>Animation</span><select id="stAnim">${ANIMS.map(([k, n]) => `<option value="${k}" ${style.animation === k ? "selected" : ""}>${n}</option>`).join("")}</select><span></span></div>
+      <div class="row"><span>Speed</span><input type="range" id="stMs" min="100" max="1500" step="50" value="${style.anim_ms}" ${style.animation === "none" ? "disabled" : ""}><output>${style.anim_ms} ms</output></div>
+    </div>`;
+  if (s) {
+    const t = $("#inText");
+    let typing = false;
+    t.oninput = () => { if (!typing) { undoStack.push(snapshot()); redoStack = []; typing = true; } s.lao = t.value; renderClipText(sel); layoutOverlay(true); updateUndo(); scheduleSave(); };
+    t.onblur = () => { typing = false; };
+    const time = (id, k) => $(id).onchange = e => {
+      const v = parseFloat(e.target.value); if (isNaN(v)) return;
+      change(() => { s[k] = Math.max(0, v); });
+    };
+    time("#inStart", "start"); time("#inEnd", "end");
+    $("#inSfx").onchange = e => change(() => { s.sfx = e.target.value; });
+    $("#inSfxPlay").onclick = () => playSfx(s.sfx || $("#inSfx").value);
+  }
+  bindRange($("#stSize"), "size", v => v.toFixed(1) + "%");
+  bindRange($("#stPos"), "position", v => v + "%");
+  bindRange($("#stLines"), "max_lines", v => String(v));
+  bindRange($("#stMs"), "anim_ms", v => v + " ms");
+  const color = (id, k) => { const c = $(id); let started = false;
+    c.oninput = () => { if (!started) { undoStack.push(snapshot()); redoStack = []; started = true; } style[k] = c.value; layoutOverlay(true); };
+    c.onchange = () => { started = false; afterChange(false); renderLeft(); }; };
+  color("#stColor", "color"); color("#stOutline", "outline_color");
+  $("#stAnim").onchange = e => change(() => { style.animation = e.target.value; });
+}
+
+// ---------------------------------------------------------------- timeline
+function fitZoom() {
+  const sc = $("#tlScroll"); if (!sc) return;
+  fitPps = Math.max(4, (sc.clientWidth - 30) / duration());
+  const z = +$("#zoom").value;
+  pps = fitPps * Math.pow(400 / fitPps > 1 ? 400 / fitPps : 1, z / 100);
+}
+function renderTimeline() {
+  const inner = $("#tlInner"); if (!inner || !cur) return;
+  const dur = duration(), width = Math.max(dur * pps + 40, $("#tlScroll").clientWidth);
+  inner.style.width = width + "px";
+  // ruler
+  const steps = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300];
+  const step = steps.find(s => s * pps >= 70) || 600;
+  let r = "";
+  for (let t = 0; t <= dur + step; t += step) {
+    r += `<div class="tick" style="left:${t * pps}px"><span>${step < 1 ? fmtClock(t) : fmtClock(t).slice(0, 5)}</span></div>`;
+    r += `<div class="tick minor" style="left:${(t + step / 2) * pps}px"></div>`;
+  }
+  $("#ruler").innerHTML = r;
+  // caption clips
+  $("#capTrack").innerHTML = segs.map((s, i) => `<div class="clip lao ${i === sel ? "sel" : ""} ${s.llm_ok === false ? "flag" : ""}" data-i="${i}"
+      style="left:${s.start * pps}px;width:${Math.max(6, (s.end - s.start) * pps)}px" title="${esc(s.lao)}">
+      <span class="h l" data-h="l"></span><span class="txt">${esc(s.lao)}</span><span class="h r" data-h="r"></span></div>`).join("");
+  // sound markers
+  $("#sfxTrack").innerHTML = segs.map((s, i) => s.sfx ? `<div class="sfxmark" data-i="${i}" style="left:${s.start * pps}px" title="${esc(s.sfx)}: click to hear">${SFX_ICONS[s.sfx] || "🔊"} ${esc(s.sfx)}</div>` : "").join("");
+  $("#tlInfo").textContent = `${segs.length} captions · ${segs.filter(s => s.sfx).length} sounds`;
+  drawWave(); updatePlayhead(true);
+  const sb = (id, on) => { const b = $(id); if (b) b.disabled = !on; };
+  const editable = !RUNNING.includes(cur.status) && segs.length > 0;
+  sb("#splitBtn", editable); sb("#dupBtn", editable && sel >= 0); sb("#rmBtn", editable && sel >= 0); sb("#addBtn", !RUNNING.includes(cur.status) && ["review", "done", "failed", "canceled"].includes(cur.status));
+}
+function renderClipText(i) { const c = $(`.clip[data-i="${i}"] .txt`); if (c) { c.textContent = segs[i].lao; c.parentElement.title = segs[i].lao; } }
+function drawWave() {
+  const cv = $("#waveCanvas"); if (!cv || !wave) return;
+  const w = duration() * pps, h = 54, px = Math.min(Math.ceil(w), 16000);
+  cv.width = px * devicePixelRatio > 32000 ? px : px * devicePixelRatio; cv.height = h * devicePixelRatio;
+  cv.style.width = w + "px";
+  const g = cv.getContext("2d"), k = cv.width / w;
+  g.clearRect(0, 0, cv.width, cv.height); g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--wave");
+  const n = wave.peaks.length, secPer = wave.duration / n, mid = cv.height / 2;
+  for (let x = 0; x < cv.width; x++) {
+    const t0 = x / k / pps, t1 = (x + 1) / k / pps;
+    let p = 0; for (let i = Math.floor(t0 / secPer); i <= Math.min(n - 1, Math.floor(t1 / secPer)); i++) p = Math.max(p, wave.peaks[i] || 0);
+    const hh = Math.max(1, p * mid * 0.95); g.fillRect(x, mid - hh, 1, hh * 2);
+  }
+}
+function updatePlayhead(force) {
+  const v = vid(), ph = $("#playhead"); if (!v || !ph) return;
+  const x = v.currentTime * pps; ph.style.left = x + "px";
+  $("#clock").textContent = fmtClock(v.currentTime) + " / " + fmtClock(duration());
+  // keep the playhead in view while playing
+  const sc = $("#tlScroll");
+  if (!v.paused && (x < sc.scrollLeft + 20 || x > sc.scrollLeft + sc.clientWidth - 40)) sc.scrollLeft = x - sc.clientWidth * 0.2;
+}
+function select(i, { seek = false } = {}) {
+  sel = i;
+  $$(".clip").forEach(c => c.classList.toggle("sel", +c.dataset.i === i));
+  renderInspector(); if (leftTab === "sound") renderLeft();
+  const b = (id, on) => { const x = $(id); if (x) x.disabled = !on; };
+  b("#dupBtn", i >= 0); b("#rmBtn", i >= 0);
+  if (seek && i >= 0) { const v = vid(); v.currentTime = segs[i].start + 0.001; }
+  if (i >= 0) { const c = $(`.clip[data-i="${i}"]`), sc = $("#tlScroll"); if (c && (c.offsetLeft < sc.scrollLeft || c.offsetLeft > sc.scrollLeft + sc.clientWidth - 60)) sc.scrollLeft = c.offsetLeft - 60; }
+}
+
+// pointer work on the timeline: scrub, select, move, trim
+function bindTimeline() {
+  const inner = $("#tlInner"), sc = $("#tlScroll");
+  const timeAt = e => clamp((e.clientX - inner.getBoundingClientRect().left) / pps, 0, duration());
+  inner.addEventListener("pointerdown", e => {
+    const clip = e.target.closest(".clip"), mark = e.target.closest(".sfxmark");
+    if (mark) { const i = +mark.dataset.i; select(i, { seek: true }); playSfx(segs[i].sfx); return; }
+    if (!clip) { // scrub
+      const v = vid(); v.currentTime = timeAt(e);
+      const move = ev => { v.currentTime = timeAt(ev); };
+      const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
+      addEventListener("pointermove", move); addEventListener("pointerup", up);
+      if (!e.target.closest(".ruler")) select(-1);
+      return;
+    }
+    const i = +clip.dataset.i, s = segs[i], handle = e.target.dataset.h;
+    select(i);
+    if (RUNNING.includes(cur.status)) return;
+    e.preventDefault();
+    const x0 = e.clientX, a0 = s.start, b0 = s.end, len = b0 - a0;
+    const prevEnd = i > 0 ? segs[i - 1].end : 0, nextStart = i < segs.length - 1 ? segs[i + 1].start : duration();
+    const playT = vid().currentTime, snap = v => Math.abs(v - playT) * pps < 7 ? playT : v;
+    let moved = false;
+    try { clip.setPointerCapture(e.pointerId); } catch {}
+    const move = ev => {
+      const d = (ev.clientX - x0) / pps;
+      if (!moved && Math.abs(ev.clientX - x0) < 3) return;
+      if (!moved) { undoStack.push(snapshot()); redoStack = []; moved = true; clip.style.cursor = handle ? "ew-resize" : "grabbing"; }
+      if (handle === "l") s.start = clamp(snap(a0 + d), prevEnd, b0 - 0.2);
+      else if (handle === "r") s.end = clamp(snap(b0 + d), a0 + 0.2, nextStart);
+      else { let ns = clamp(snap(a0 + d), prevEnd, nextStart - len); const ne = snap(ns + len); if (ne !== ns + len) ns = clamp(ne - len, prevEnd, nextStart - len); s.start = ns; s.end = ns + len; }
+      clip.style.left = s.start * pps + "px"; clip.style.width = (s.end - s.start) * pps + "px";
+      const m = $(`.sfxmark[data-i="${i}"]`); if (m) m.style.left = s.start * pps + "px";
+      layoutOverlay(true);
+    };
+    const up = () => {
+      clip.removeEventListener("pointermove", move); clip.removeEventListener("pointerup", up); clip.style.cursor = "";
+      if (moved) { afterChange(false); renderInspector(); }
+      else if (!handle) { vid().currentTime = s.start + 0.001; }
+    };
+    clip.addEventListener("pointermove", move); clip.addEventListener("pointerup", up);
+  });
+  sc.addEventListener("wheel", e => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const z = $("#zoom"); z.value = clamp(+z.value - Math.sign(e.deltaY) * 8, 0, 100); z.oninput();
+  }, { passive: false });
+  $("#zoom").oninput = () => {
+    const v = vid(), anchor = v.currentTime * pps - sc.scrollLeft;
+    fitZoom(); renderTimeline(); sc.scrollLeft = v.currentTime * pps - anchor;
+  };
+}
+
+// ---------------------------------------------------------------- edit actions
+function splitAtPlayhead() {
+  const t = vid().currentTime; let i = activeIndex(t);
+  if (i < 0) { toast("Move the playhead onto a caption to split it"); return; }
+  const s = segs[i];
+  if (t - s.start < 0.2 || s.end - t < 0.2) { toast("Too close to the edge to split"); return; }
+  const chars = [...s.lao], at = Math.round(chars.length * (t - s.start) / (s.end - s.start));
+  let [a, b] = splitHalf(s.lao, clamp(at, 1, chars.length - 1));
+  if (!b) { a = s.lao; b = s.lao; }
+  change(() => { segs.splice(i, 1, { ...s, end: t, lao: a }, { ...s, start: t, lao: b, sfx: "" }); sel = i + 1; });
+  toast("Split");
+}
+function addCaption() {
+  const t = vid().currentTime, i = activeIndex(t);
+  let start = i >= 0 ? segs[i].end : t;
+  const next = segs.find(s => s.start >= start + 0.05);
+  let end = Math.min(start + 2, next ? next.start : duration());
+  if (end - start < 0.3) { toast("No room here: move the playhead to a gap"); return; }
+  change(() => { segs.push({ start, end, lao: NEW_TEXT, sfx: "" }); segs.sort((a, b) => a.start - b.start); sel = segs.findIndex(s => s.start === start); });
+  vid().currentTime = start + 0.001;
+  setTimeout(() => { const ta = $("#inText"); if (ta) { ta.focus(); ta.select(); } }, 30);
+}
+function duplicateSel() {
+  if (sel < 0) return;
+  const s = segs[sel], len = s.end - s.start, next = segs[sel + 1];
+  const end = Math.min(s.end + len, next ? next.start : duration());
+  if (end - s.end < 0.3) { toast("No room after this caption"); return; }
+  change(() => { segs.splice(sel + 1, 0, { ...s, start: s.end, end }); sel = sel + 1; });
+}
+function deleteSel() {
+  if (sel < 0) return;
+  change(() => { segs.splice(sel, 1); sel = Math.min(sel, segs.length - 1); });
+}
+
+// ---------------------------------------------------------------- preview: real-time captions
+let ovCache = { key: "", text: "" }, lastIdx = -1, lastT = 0, rafId = 0;
+function videoRect(v) {
+  const bw = v.clientWidth, bh = v.clientHeight, vw = v.videoWidth || 16, vh = v.videoHeight || 9;
+  const k = Math.min(bw / vw, bh / vh);
+  return { x: (bw - vw * k) / 2, y: (bh - vh * k) / 2, w: vw * k, h: vh * k, scale: k, vw, vh };
+}
+// same as caption_pages() in lao_caption.py: a caption longer than max_lines is shown as pages,
+// each getting a share of the caption's time in proportion to its length
+function captionPages(s, r) {
+  const size = Math.round(r.vh * style.size / 100);
+  const width = Math.max(8, Math.min(42, Math.floor(r.vw * 0.9 / (size * 0.4))));
+  const n = style.max_lines || 2, key = s.lao + "|" + width + "|" + n + "|" + s.start + "|" + s.end;
+  if (ovCache.key === key) return ovCache.pages;
+  const lines = wrapLao(s.lao, width), groups = [];
+  for (let k = 0; k < lines.length; k += n) groups.push(lines.slice(k, k + n));
+  if (!groups.length) groups.push([""]);
+  const w = groups.map(g => Math.max(1, g.reduce((a, l) => a + [...l].length, 0))), total = w.reduce((a, b) => a + b, 0);
+  let t = s.start;
+  const pages = groups.map((g, k) => {
+    const end = k === groups.length - 1 ? s.end : t + (s.end - s.start) * w[k] / total;
+    const p = { start: t, end, text: g.join("\n") }; t = end; return p;
+  });
+  ovCache = { key, pages };
+  return pages;
+}
+function layoutOverlay(force) {
+  const v = vid(), o = $("#overlay"); if (!v || !o) return;
+  const r = videoRect(v);
+  const assPx = r.h * style.size / 100;
+  const outline = Math.max(2, Math.floor(r.vh * style.size / 100 / 12)) * r.scale;
+  Object.assign(o.style, {
+    left: r.x + 24 * r.scale + "px", width: r.w - 48 * r.scale + "px",
+    bottom: (v.clientHeight - r.y - r.h) + r.h * style.position / 100 + "px",
+    fontSize: assPx * LIBASS_EM + "px", color: style.color,
+    webkitTextStroke: 2 * outline + "px " + style.outline_color,
+    textShadow: `${1.5 * r.scale}px ${1.5 * r.scale}px 0 rgba(0,0,0,.5)`,
+  });
+  o._rise = assPx * 1.2;
+  if (force) frame(true);
+}
+// runs every animation frame: caption text, animation, playhead, sounds
+function frame(once) {
+  const v = vid(), o = $("#overlay");
+  if (v && o && cur) {
+    const t = v.currentTime, i = activeIndex(t);
+    if (mode === "edit" && i >= 0) {
+      const pages = captionPages(segs[i], videoRect(v));
+      const page = pages.find(p => t < p.end) || pages[pages.length - 1], st = animState(page, t);
+      if (o.textContent !== page.text) o.textContent = page.text;
+      o.style.opacity = st.o; o.style.transform = `translateY(${st.rise * (o._rise || 0)}px) scale(${st.s})`;
+      o.hidden = false;
+    } else o.hidden = true;
+    // sound: fire when playback crosses a caption start (not when seeking around)
+    if (!v.paused && mode === "edit" && t > lastT && t - lastT < 1)
+      for (const s of segs) if (s.sfx && s.start > lastT && s.start <= t) playSfx(s.sfx);
+    if (i !== lastIdx) $$(".clip").forEach(c => c.classList.toggle("active", +c.dataset.i === i));
+    lastIdx = i; lastT = t;
+    updatePlayhead();
+    $("#playBtn").textContent = v.paused ? "▶" : "❚❚";
+  }
+  if (!once) rafId = requestAnimationFrame(() => frame());
+}
+// drag the caption on the video to change its height
+function bindOverlayDrag() {
+  const o = $("#overlay"), g = $("#guide");
+  o.addEventListener("pointerdown", e => {
+    if (RUNNING.includes(cur.status)) return;
+    e.preventDefault(); try { o.setPointerCapture(e.pointerId); } catch {}
+    const v = vid(), r = videoRect(v), y0 = e.clientY, p0 = style.position;
+    const i = activeIndex(v.currentTime); if (i >= 0 && i !== sel) select(i);
+    let moved = false;
+    const move = ev => {
+      if (!moved) { undoStack.push(snapshot()); redoStack = []; moved = true; o.classList.add("drag"); }
+      style.position = Math.round(clamp(p0 + (y0 - ev.clientY) / r.h * 100, 2, 45) * 2) / 2;
+      layoutOverlay(true);
+      g.style.display = "block"; g.style.top = (r.y + r.h - r.h * style.position / 100) + "px";
+      g.querySelector("span").textContent = style.position + "%";
+      syncStyleControls();
+    };
+    const up = () => { o.removeEventListener("pointermove", move); o.removeEventListener("pointerup", up); o.classList.remove("drag"); g.style.display = "none"; if (moved) afterChange(false); };
+    o.addEventListener("pointermove", move); o.addEventListener("pointerup", up);
+  });
+}
+
+// ---------------------------------------------------------------- export
+function openExport() {
+  const blank = segs.findIndex(s => s.lao.trim() === NEW_TEXT);
+  if (blank >= 0) { select(blank, { seek: true }); toast(`Caption ${blank + 1} still says “${NEW_TEXT}”. Type the words or delete it.`); return; }
+  const bg = document.createElement("div"); bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal"><h2>Export video</h2>
+    <div class="muted small">Draws the captions into the video with your style and animation, and mixes in the sound effects (${segs.filter(s => s.sfx).length}).</div>
+    <label class="check" style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" id="exCollect" ${cur.collect ? "checked" : ""}> Learn from my fixes <span class="muted small">(saves clips as training data)</span></label>
+    <div class="actions"><button id="exCancel">Cancel</button><button class="primary" id="exGo">Export</button></div></div>`;
+  document.body.appendChild(bg);
+  bg.onclick = e => { if (e.target === bg) bg.remove(); };
+  $("#exCancel").onclick = () => bg.remove();
+  $("#exGo").onclick = async () => {
+    $("#exGo").disabled = true;
+    if (!(await save()) && saveState === "error") { toast("Fix first: " + saveMsg); bg.remove(); return; }
+    try {
+      await api("/jobs/" + cur.id + "/burn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ collect: $("#exCollect").checked, style }) });
+      bg.remove(); vid().pause(); refreshJob(false);
+    } catch (e) { toast("Export failed: " + e.message); bg.remove(); }
+  };
+}
+
+// ---------------------------------------------------------------- wiring
+function bindEditor() {
+  $("#backBtn").onclick = () => location.hash = "#/";
+  $("#undoBtn").onclick = undo; $("#redoBtn").onclick = redo;
+  $("#exportBtn").onclick = openExport;
+  $("#menuBtn").onclick = e => { e.stopPropagation(); $("#menuList").classList.toggle("open"); };
+  $("#cancelBtn").onclick = async () => { if (confirm("Stop processing this project?")) { await api("/jobs/" + cur.id + "/cancel", { method: "POST" }); refreshJob(false); } };
+  $("#delBtn").onclick = async () => {
+    if (!confirm("Delete this project and its files? This cannot be undone.")) return;
+    await api("/jobs/" + cur.id, { method: "DELETE" }); setSave("saved"); location.hash = "#/";
+  };
+  $$("#modeToggle button").forEach(b => b.onclick = () => { mode = b.dataset.m; setVideoSrc(); renderStatus(); frame(true); });
+  $$("#leftTabs button").forEach(b => b.onclick = () => { leftTab = b.dataset.t; renderLeft(); });
+  $("#playBtn").onclick = togglePlay;
+  $("#prevBtn").onclick = () => jumpCaption(-1); $("#nextBtn").onclick = () => jumpCaption(1);
+  $("#vid").onclick = togglePlay;
+  // backups for when the browser slows animation frames (background tab): still run sounds/playhead
+  $("#vid").ontimeupdate = () => frame(true);
+  $("#vid").onseeking = () => { lastT = vid().currentTime; frame(true); };
+  $("#splitBtn").onclick = splitAtPlayhead; $("#addBtn").onclick = addCaption;
+  $("#dupBtn").onclick = duplicateSel; $("#rmBtn").onclick = deleteSel;
+  bindTimeline(); bindOverlayDrag();
+  new ResizeObserver(() => { layoutOverlay(true); const z = +$("#zoom").value; fitZoom(); if (!z) renderTimeline(); }).observe($("#stage"));
+  cancelAnimationFrame(rafId); frame();
+}
+function togglePlay() {
+  const v = vid(); if (!v.src) return;
+  if (audioCtx?.state === "suspended") audioCtx.resume();
+  if (v.paused) { audioCtx = audioCtx || new AudioContext(); v.play(); } else v.pause();
+}
+function jumpCaption(dir) {
+  const t = vid().currentTime;
+  const i = dir > 0 ? segs.findIndex(s => s.start > t + 0.01) : segs.map(s => s.start < t - 0.3).lastIndexOf(true);
+  if (i >= 0) select(i, { seek: true });
+}
+document.addEventListener("keydown", e => {
+  if (!cur || !$("#vid")) return;
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+  if (mod && k === "s") { e.preventDefault(); save().then(ok => ok && toast("Saved")); return; }
+  if (typing) return;
+  if (mod && k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (mod && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
+  else if (k === " ") { e.preventDefault(); togglePlay(); }
+  else if (k === "delete" || k === "backspace") { e.preventDefault(); deleteSel(); }
+  else if (k === "s" && !mod) splitAtPlayhead();
+  else if (k === "arrowleft") { vid().currentTime -= e.shiftKey ? 1 : 1 / 30; }
+  else if (k === "arrowright") { vid().currentTime += e.shiftKey ? 1 : 1 / 30; }
+  else if (k === "arrowup") jumpCaption(-1);
+  else if (k === "arrowdown") jumpCaption(1);
+});
+document.addEventListener("click", () => $("#menuList")?.classList.remove("open"));
+window.addEventListener("beforeunload", e => { if (cur && saveState !== "saved") { save(); e.preventDefault(); e.returnValue = ""; } });
+
+route();
+</script>
+</body>
+</html>

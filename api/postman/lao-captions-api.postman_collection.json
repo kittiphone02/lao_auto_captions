@@ -1,0 +1,202 @@
+{
+  "info": {
+    "name": "Lao Captions API",
+    "description": "Go Gin service that runs lao_caption.py (Whisper + Lao wav2vec2 + SEA-LION via Ollama) and burns Lao captions into a video.\n\nFlow: 1. Create job → 2. Get job (repeat until status = review) → 3. Get/fix captions → 4. Burn → 5. Get job (until done) → 6. Download video.\n\nCreate job saves the new id into {{jobId}} automatically. Set {{apiKey}} only if the server runs with API_KEY.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key", "type": "string" },
+      { "key": "value", "value": "{{apiKey}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "apiKey", "value": "" },
+    { "key": "jobId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "url": "{{baseUrl}}/health",
+        "description": "Checks python, lao_caption.py, ffmpeg and the Ollama model. 200 = ready, 503 = something is missing (see checks)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('service is ready', () => pm.expect(pm.response.json().ok).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Jobs",
+      "item": [
+        {
+          "name": "Create job (upload video)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/jobs",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "video", "type": "file", "src": [], "description": "Pick the video file (.mp4 .mov .mkv .webm .avi .m4v)" },
+                { "key": "context", "value": "Clothing shop, selling handmade skirts", "type": "text", "description": "What the video is about. Helps the LLM." },
+                { "key": "no_llm", "value": "false", "type": "text", "description": "true = skip SEA-LION (faster, less accurate)" },
+                { "key": "auto_burn", "value": "false", "type": "text", "description": "true = burn straight away, skip review" },
+                { "key": "collect", "value": "false", "type": "text", "description": "true = after burning, save clips to dataset\\ and examples.jsonl" }
+              ]
+            },
+            "description": "Uploads a video and queues it. Returns 202 with the job. Click the 'video' row and choose a file before sending."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('job created', () => pm.response.to.have.status(202));",
+                  "const id = pm.response.json().id;",
+                  "if (id) { pm.collectionVariables.set('jobId', id); console.log('jobId =', id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get job (status)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+            "description": "status: queued → transcribing → review → burning → done (or failed / canceled).\nstage: whisper → wav2vec2 → llm → burn → collect.\nlog has the last lines from the Python script."
+          }
+        },
+        {
+          "name": "List jobs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/jobs",
+            "description": "All jobs, newest first."
+          }
+        },
+        {
+          "name": "Cancel job",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/cancel",
+            "description": "Stops a queued or running job."
+          }
+        },
+        {
+          "name": "Delete job",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}",
+            "description": "Cancels the job and deletes its files. Returns 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Review captions",
+      "item": [
+        {
+          "name": "Get segments (JSON)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/segments",
+            "description": "Captions as JSON. 'lao' is the caption; 'whisper' and 'w2v' are the raw guesses the LLM used; llm_ok=false means the LLM failed on that line. Returns 409 until status = review."
+          }
+        },
+        {
+          "name": "Update segments (JSON)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/segments",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"segments\": [\n    { \"start\": 0.00, \"end\": 1.72, \"lao\": \"ສະບາຍດີທຸກຄົນ\", \"sfx\": \"pop\" },\n    { \"start\": 1.72, \"end\": 5.00, \"lao\": \"ມື້ນີ້ຈະມາແນະນຳສິນຄ້າໃໝ່\", \"sfx\": \"whoosh\" }\n  ],\n  \"style\": { \"size\": 5.5, \"color\": \"#FFD400\", \"animation\": \"pop\", \"sfx_volume\": 1 }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Replaces ALL captions. Tip: copy the 'segments' array from Get segments, fix the 'lao' text, and send it back (whisper/w2v/llm_ok fields are ignored).\n\nsfx (optional): sound played when the caption appears. See 'List sound effects' for the names.\nstyle (optional): saves the caption look on the job (same keys as Burn captions)."
+          }
+        },
+        {
+          "name": "List sound effects",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/sfx",
+            "description": "Names you can use as a caption's sfx. Hear one at {{baseUrl}}/sfx/pop.wav"
+          }
+        },
+        {
+          "name": "Get waveform",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/waveform?n=1200",
+            "description": "Loudness peaks (0-1) and duration, for drawing a timeline."
+          }
+        },
+        {
+          "name": "Download SRT",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/srt",
+            "description": "The current .lo.srt file. Use Send and Download to save it."
+          }
+        },
+        {
+          "name": "Upload SRT (raw text)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/srt",
+            "header": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }],
+            "body": {
+              "mode": "raw",
+              "raw": "1\n00:00:00,000 --> 00:00:01,720\nສະບາຍດີທຸກຄົນ\n\n2\n00:00:01,720 --> 00:00:05,000\nມື້ນີ້ຈະມາແນະນຳສິນຄ້າໃໝ່\n",
+              "options": { "raw": { "language": "text" } }
+            },
+            "description": "Replaces the captions with an SRT you edited elsewhere (e.g. Subtitle Edit). Paste the whole file as the body."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Burn & download",
+      "item": [
+        {
+          "name": "Burn captions",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/burn",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"collect\": false,\n  \"style\": {\n    \"size\": 6,\n    \"position\": 20,\n    \"color\": \"#FFD400\",\n    \"outline_color\": \"#000000\",\n    \"animation\": \"pop\",\n    \"anim_ms\": 500\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Queues the burn (returns 202). Poll Get job until status = done.\n\ncollect=true also saves the corrected clips as training data.\n\nstyle (all keys optional; omit style to reuse the job's last one):\n- size: font size, % of video height (1.5-12, default 3.7)\n- position: gap from the bottom, % of video height (2-60, default 13)\n- color / outline_color: \"#RRGGBB\" (default white / black)\n- animation: none | fade | pop | slide (default none)\n- anim_ms: animation length in ms (50-2000, default 300)\n- sfx_volume: sound effect loudness 0-2 (default 1)\n- max_lines: longer captions are shown as pages of this many lines (1-6, default 2)\n\nSound effects set on captions (Update segments) are mixed into the audio."
+          }
+        },
+        {
+          "name": "Download captioned video",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/jobs/{{jobId}}/video",
+            "description": "The finished .captioned.mp4. Use Send and Download to save it. Returns 409 until status = done."
+          }
+        }
+      ]
+    }
+  ]
+}

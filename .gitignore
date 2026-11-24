@@ -1,0 +1,28 @@
+# private data: your videos, voice clips, corrections and shop words stay on this PC
+dataset/
+api/data/
+examples.jsonl
+glossary.txt
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+*.m4v
+*.srt
+*.work/
+*.captions.json
+
+# downloaded / built
+.venv/
+models/
+api/lao-captions-api.exe
+*.exe
+__pycache__/
+*.pyc
+
+# editor / OS
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini

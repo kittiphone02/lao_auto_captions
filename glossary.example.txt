@@ -1,0 +1,11 @@
+# Copy this file to glossary.txt and put your own words in it (glossary.txt is not pushed to git).
+# One word or phrase per line: shop names, products, colours, sizes, slang you use often.
+# The LLM uses these to fix misheard words. Whisper also gets them as a hint.
+ກະໂປງ
+ສັ່ງຕັດ
+ງານພ້ອມສົ່ງ
+ໄຊສ໌
+ສີດຳ
+ສີຂາວ
+ເດີ້
+ເນາະ
